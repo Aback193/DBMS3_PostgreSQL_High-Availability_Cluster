@@ -1,0 +1,104 @@
+version: "3"
+services:
+  pg-0:
+    image: bitnami/postgresql-repmgr:latest
+    ports:
+      - 5432
+    volumes:
+      - pg_0_data:/bitnami/postgresql
+    environment:
+      - POSTGRESQL_POSTGRES_PASSWORD=root
+      - POSTGRESQL_USERNAME=admin
+      - POSTGRESQL_PASSWORD=root
+      - POSTGRESQL_DATABASE=postgres
+      - REPMGR_PASSWORD=root
+      - REPMGR_PRIMARY_HOST=pg-0
+      - REPMGR_PARTNER_NODES=pg-0,pg-1,pg-2
+      - REPMGR_NODE_NAME=pg-0
+      - REPMGR_NODE_NETWORK_NAME=pg-0
+    networks:
+      - bridge-docker
+  pg-1:
+    image: bitnami/postgresql-repmgr:latest
+    ports:
+      - 5432
+    volumes:
+      - pg_1_data:/bitnami/postgresql
+    environment:
+      - POSTGRESQL_POSTGRES_PASSWORD=root
+      - POSTGRESQL_USERNAME=admin
+      - POSTGRESQL_PASSWORD=root
+      - POSTGRESQL_DATABASE=postgres
+      - REPMGR_PASSWORD=root
+      - REPMGR_PRIMARY_HOST=pg-0
+      - REPMGR_PARTNER_NODES=pg-0,pg-1,pg-2
+      - REPMGR_NODE_NAME=pg-1
+      - REPMGR_NODE_NETWORK_NAME=pg-1
+    networks:
+      - bridge-docker
+  pg-2:
+    image: bitnami/postgresql-repmgr:latest
+    ports:
+      - 5432
+    volumes:
+      - pg_2_data:/bitnami/postgresql
+    environment:
+      - POSTGRESQL_POSTGRES_PASSWORD=root
+      - POSTGRESQL_USERNAME=admin
+      - POSTGRESQL_PASSWORD=root
+      - POSTGRESQL_DATABASE=postgres
+      - REPMGR_PASSWORD=root
+      - REPMGR_PRIMARY_HOST=pg-0
+      - REPMGR_PARTNER_NODES=pg-0,pg-1,pg-2
+      - REPMGR_NODE_NAME=pg-2
+      - REPMGR_NODE_NETWORK_NAME=pg-2
+    networks:
+      - bridge-docker
+  pgadmin:
+    container_name: pgadmin4_container
+    image: dpage/pgadmin4
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: root
+    ports:
+      - "5050:80"
+  pgpool:
+    restart: 'always'
+    image: bitnami/pgpool:latest
+    ports:
+      - 5432:5432
+    volumes:
+      - /home/aback/docker-pg-cluster/pgpool.conf:/config/pgpool.conf
+    environment:
+      - PGPOOL_USER_CONF_FILE=/config/pgpool.conf
+      - PGPOOL_BACKEND_APPLICATION_NAMES=0,1,2
+      - PGPOOL_BACKEND_NODES=0:pg-0:5432,1:pg-1:5432,2:pg-2:5432
+      - PGPOOL_SR_CHECK_USER=admin
+      - PGPOOL_SR_CHECK_PASSWORD=root
+      - PGPOOL_ENABLE_LDAP=no
+      - PGPOOL_POSTGRES_USERNAME=admin
+      - PGPOOL_POSTGRES_PASSWORD=root
+      - PGPOOL_ADMIN_USERNAME=admin
+      - PGPOOL_ADMIN_PASSWORD=root
+      - PGPOOL_AUTO_FAILBACK=yes
+      - PGPOOL_CLIENT_IDLE_LIMIT=5
+    healthcheck:
+      test: ["CMD", "/opt/bitnami/scripts/pgpool/healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bridge-docker
+    depends_on:
+      - pg-0
+      - pg-1
+      - pg-2
+volumes:
+  pg_0_data:
+  pg_1_data:
+  pg_2_data:
+networks:
+  bridge-docker:
+    external:
+      name: bridge-docker
