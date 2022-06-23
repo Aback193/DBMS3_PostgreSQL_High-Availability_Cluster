@@ -1,0 +1,50 @@
+version: "3"
+services:
+  pg_master_1:
+     build: ./master
+     ports:
+         - "5445:5432"
+     volumes:
+         - mdata:/var/lib/postgresql/data
+     environment:
+         - POSTGRES_USER=admin
+         - POSTGRES_PASSWORD=root
+         - POSTGRES_DB=postgres
+         - PG_REP_USER=rep
+         - PG_REP_PASSWORD=root
+     networks:
+           - bridge-docker
+     restart: always
+  pg_slave_1:
+     build: ./slave
+     ports:
+         - "5446:5432"
+     volumes:
+         - sdata:/var/lib/postgresql/data
+     environment:
+         - POSTGRES_USER=admin
+         - POSTGRES_PASSWORD=root
+         - POSTGRES_DB=postgres
+         - PG_REP_USER=rep
+         - PG_REP_PASSWORD=root
+     networks:
+            - bridge-docker
+     restart: always
+     depends_on:
+      - pg_master_1
+  pgadmin:
+    container_name: pgadmin4_container
+    image: dpage/pgadmin4
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: root
+    ports:
+      - "5050:80"
+volumes:
+  mdata:
+  sdata:
+networks:
+  bridge-docker:
+    external:
+      name: bridge-docker
